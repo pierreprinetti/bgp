@@ -20,11 +20,25 @@ declare \
 	rack1_subnet_id=''        \
 	rack1_leaf1_port_id=''    \
 	leaf1_server_id=''        \
-	spine_server_id=''
+	spine_server_id=''        \
+	rack1_worker_port_id=''   \
+	rack1_worker_server_id=''
 
 cleanup() {
 	>&2 echo
 	>&2 echo 'Starting the cleanup...'
+
+	if [ -n "$rack1_worker_server_id" ]; then
+		>&2 echo "Deleting server ${rack1_worker_server_id}"
+		openstack server delete "$rack1_worker_server_id" \
+			|| >&2 echo "Failed to delete server ${rack1_worker_server_id}"
+	fi
+
+	if [ -n "$rack1_worker_port_id" ]; then
+		>&2 echo "Deleting port ${rack1_worker_port_id}"
+		openstack port delete "$rack1_worker_port_id" \
+			|| >&2 echo "Failed to delete port ${rack1_worker_port_id}"
+	fi
 
 	if [ -n "$spine_server_id" ]; then
 		>&2 echo "Deleting server ${spine_server_id}"
@@ -156,6 +170,22 @@ spine_server_id="$(openstack server create -f value -c id \
 	--key-name "$key_name" \
 	"${prefix}spine-server")"
 >&2 echo "Created spine server ${spine_server_id}"
+
+rack1_worker_port_id="$(openstack port create -f value -c id \
+	--network "$rack1_network_id" \
+	--security-group "$security_group_id" \
+	--fixed-ip "subnet=${rack1_subnet_id},ip-address=192.168.10.3" \
+	"${prefix}rack1-leaf1-port")"
+>&2 echo "Created rack1 worker port ${rack1_worker_port_id}"
+
+rack1_worker_server_id="$(openstack server create -f value -c id \
+	--image "$server_image" \
+	--flavor "$server_flavor" \
+	--security-group "${security_group_id}" \
+	--nic "port-id=${rack1_worker_port_id}" \
+	--key-name "$key_name" \
+	"${prefix}rack1-worker-server")"
+>&2 echo "Created worker server ${rack1_worker_server_id}"
 
 >&2 echo "Infrastructure up. Press ENTER to tear down."
 # shellcheck disable=SC2162,SC2034
