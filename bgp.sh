@@ -155,8 +155,8 @@ leaf1_server_id="$(openstack server create -f value -c id \
 	--image "$server_image" \
 	--flavor "$server_flavor" \
 	--security-group "${security_group_id}" \
-	--nic "port-id=${patch1_leaf1_port_id}" \
 	--nic "port-id=${rack1_leaf1_port_id}" \
+	--nic "port-id=${patch1_leaf1_port_id}" \
 	--key-name "$key_name" \
 	"${prefix}leaf1-server")"
 >&2 echo "Created leaf1 server ${leaf1_server_id}"
